@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>DrawTimer</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --surface: #ffffff;
+    --surface-2: #f1f1f3;
+    --border: #e2e2e6;
+    --border-strong: #cfcfd4;
+    --text: #18181b;
+    --muted: #6b6b73;
+    --accent: #2d6cdf;
+    --accent-contrast: #ffffff;
+    --danger: #c64545;
+    --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+    --radius: 10px;
+    --radius-lg: 14px;
+    --gap: 14px;
+    --pad: 18px;
+    --tap: 44px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1012;
+      --surface: #17181c;
+      --surface-2: #1f2026;
+      --border: #2a2b31;
+      --border-strong: #3a3b42;
+      --text: #ececef;
+      --muted: #9a9aa3;
+      --accent: #6aa3ff;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 16px/1.4 var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .icon { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .icon-lg { width: 36px; height: 36px; }
+
+  header.app {
+    padding: 18px var(--pad) 6px;
+    text-align: center;
+  }
+  header.app h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  header.app h1 .icon { color: var(--accent); }
+
+  main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--pad);
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  main > section {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+  main > section[hidden] { display: none; }
+  #config, #summary { flex: 0 1 auto; }
+
+  /* --- shared controls --- */
+  button, .btn {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    min-height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, transform .04s;
+    user-select: none;
+  }
+  button:hover, .btn:hover { background: var(--surface-2); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: none; box-shadow: var(--focus); border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .btn-primary { background: var(--accent); color: var(--accent-contrast); border-color: transparent; }
+  .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, black); }
+  .btn-icon { padding: 0; min-width: var(--tap); height: var(--tap); border-radius: var(--radius); }
+  .btn-danger { color: var(--danger); }
+  .btn-danger:hover { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); }
+
+  /* segmented toggle group */
+  .seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--surface-2);
+    padding: 4px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .seg button {
+    flex: 1 1 70px;
+    min-height: 36px;
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+  }
+
+  label.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  label.field > span { font-weight: 500; color: var(--text); }
+
+  input[type="number"] {
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    min-height: var(--tap);
+    width: 100%;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .stepper { display: flex; gap: 8px; align-items: stretch; }
+  .stepper input { flex: 1 1 auto; text-align: center; font-variant-numeric: tabular-nums; }
+  .stepper button { flex: 0 0 auto; width: var(--tap); padding: 0; }
+
+  /* --- config view --- */
+  .drop {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 28px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  .drop:hover, .drop:focus-visible { border-color: var(--accent); outline: none; }
+  .drop.dragging { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); color: var(--text); }
+  .drop .primary { color: var(--text); font-weight: 500; }
+  .drop .alt {
+    background: none;
+    border: none;
+    color: var(--accent);
+    padding: 4px 6px;
+    min-height: 0;
+    font-size: 14px;
+    text-decoration: underline;
+  }
+  .drop.has-images { border-style: solid; }
+  .drop .count { color: var(--text); font-weight: 500; }
+
+  .thumbs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 4px;
+    padding: 2px;
+  }
+  .thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    cursor: pointer;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .15s, filter .15s; }
+  .thumb input { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .thumb.off img { opacity: .25; filter: grayscale(1); }
+  .thumb.off { border-color: var(--border); }
+  .thumb:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .thumb-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .thumb-actions button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    text-decoration: underline;
+    padding: 4px 6px;
+    min-height: 0;
+    font-size: 13px;
+  }
+
+  .sound-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    min-height: var(--tap);
+  }
+  .sound-row .label { display: flex; align-items: center; gap: 10px; }
+  .sound-row button { min-height: 36px; padding: 6px 12px; }
+
+  /* --- session view --- */
+  #session { gap: 12px; }
+  .stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+  }
+  .stats .cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .stats .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .stats .v { font: 600 18px/1.1 var(--mono); }
+  .stats .countdown.warn { color: var(--danger); }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .controls > button { width: 100%; min-height: 52px; }
+
+  /* --- summary view --- */
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+    text-align: center;
+  }
+  .summary-card h2 { margin: 0; font-size: 20px; font-weight: 600; }
+  .summary-stats { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+  .summary-stats .cell { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .summary-stats .v { font: 600 28px/1 var(--mono); }
+  .summary-stats .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .summary-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
+  .hint.err { color: var(--danger); }
+
+  /* narrow screens */
+  @media (max-width: 420px) {
+    main { padding: 12px; gap: 10px; }
+    .controls { grid-template-columns: repeat(2, 1fr); }
+    .stats .v { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12m0-12-4 4m4-4 4 4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14M20 5 9 12l11 7z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14M4 5l11 7-11 7z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 4v4h-4"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 20v-4h4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/></symbol>
+    <symbol id="i-vol-off" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6M21 9l-5 6"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  </defs>
+</svg>
+
+<header class="app"><h1>DrawTimer <svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></h1></header>
+
+<main>
+  <!-- ===== CONFIG VIEW ===== -->
+  <section id="config" aria-label="Session setup">
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose folder of images">
+      <svg class="icon icon-lg" aria-hidden="true"><use href="#i-upload"/></svg>
+      <div class="primary">Drop a folder of images here</div>
+      <div>or
+        <button type="button" class="alt" id="pick-folder">choose a folder</button>
+        ·
+        <button type="button" class="alt" id="pick-files">select images</button>
+      </div>
+      <div id="thumb-actions" class="thumb-actions" hidden>
+        <span id="thumb-summary"></span>
+        <span>
+          <button type="button" id="thumb-all">Select all</button>
+          ·
+          <button type="button" id="thumb-none">None</button>
+        </span>
+      </div>
+      <div id="thumbs" class="thumbs" hidden></div>
+      <div id="drop-hint" class="hint" aria-live="polite"></div>
+    </div>
+    <input id="input-folder" type="file" webkitdirectory directory multiple hidden>
+    <input id="input-files" type="file" multiple accept="image/*" hidden>
+
+    <label class="field">
+      <span>Rounds</span>
+      <div class="stepper">
+        <button id="rounds-dec" type="button" class="btn-icon" aria-label="Decrease rounds"><svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg></button>
+        <input id="rounds" type="number" min="1" max="999" step="1" inputmode="numeric">
+        <button id="rounds-inc" type="button" class="btn-icon" aria-label="Increase rounds"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+      </div>
+    </label>
+
+    <label class="field">
+      <span>Time per round</span>
+      <div id="time-seg" class="seg" role="radiogroup" aria-label="Time per round"></div>
+    </label>
+
+    <div class="sound-row">
+      <div class="label">
+        <svg class="icon" aria-hidden="true"><use id="sound-icon" href="#i-vol"/></svg>
+        <span>End-of-round sound</span>
+      </div>
+      <button id="sound-toggle" type="button" aria-pressed="true">On</button>
+    </div>
+
+    <button id="begin" class="btn-primary" type="button" disabled>
+      <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>
+      Begin
+    </button>
+  </section>
+
+  <!-- ===== SESSION VIEW ===== -->
+  <section id="session" aria-label="Drawing session" hidden>
+    <div class="stage"><img id="ref-image" alt="Reference"></div>
+    <div class="stats" role="status" aria-live="polite">
+      <div class="cell"><span class="k">Round</span><span id="stat-round" class="v">–</span></div>
+      <div class="cell"><span class="k">Timer</span><span id="stat-timer" class="v countdown">–</span></div>
+      <div class="cell"><span class="k">Total</span><span id="stat-total" class="v">–</span></div>
+    </div>
+    <div class="controls">
+      <button id="btn-prev" class="btn-icon" aria-label="Previous round"><svg class="icon" aria-hidden="true"><use href="#i-prev"/></svg></button>
+      <button id="btn-pause" class="btn-icon" aria-label="Pause"><svg class="icon" aria-hidden="true"><use id="pause-icon" href="#i-pause"/></svg></button>
+      <button id="btn-next" class="btn-icon" aria-label="Next round"><svg class="icon" aria-hidden="true"><use href="#i-next"/></svg></button>
+      <button id="btn-stop" class="btn-icon btn-danger" aria-label="Stop session"><svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></button>
+    </div>
+  </section>
+
+  <!-- ===== SUMMARY VIEW ===== -->
+  <section id="summary" aria-label="Session summary" hidden>
+    <div class="summary-card">
+      <h2>Session complete</h2>
+      <div class="summary-stats">
+        <div class="cell"><span id="sum-rounds" class="v">–</span><span class="k">Rounds</span></div>
+        <div class="cell"><span id="sum-time" class="v">–</span><span class="k">Total time</span></div>
+      </div>
+      <div class="summary-actions">
+        <button id="btn-repeat" class="btn-primary">
+          <svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg>
+          Repeat
+        </button>
+        <button id="btn-new">
+          <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+          New
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const SETTINGS_KEY = 'drawtimer:settings';
+  const DEFAULTS = { rounds: 10, secondsPerRound: 60, soundOn: true };
+  const TIME_OPTIONS = [
+    { s: 30,  label: '30s' },
+    { s: 45,  label: '45s' },
+    { s: 60,  label: '60s' },
+    { s: 90,  label: '90s' },
+    { s: 300, label: '5m'  },
+    { s: 600, label: '10m' },
+  ];
+  const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
+
+  const $ = (id) => document.getElementById(id);
+  const views = { config: $('config'), session: $('session'), summary: $('summary') };
+
+  const state = {
+    view: 'config',
+    settings: loadSettings(),
+    images: [],
+    urls: [],
+    included: [],
+    queue: [],
+    cursor: 0,
+    round: 0,
+    rounds: 0,
+    roundMs: 0,
+    roundDeadline: null,
+    roundRemainingMs: 0,
+    activeMs: 0,
+    activeStart: null,
+    paused: false,
+    rafId: null,
+  };
+
+  // ---------- settings persistence ----------
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return { ...DEFAULTS };
+      const s = JSON.parse(raw);
+      return {
+        rounds: clamp(int(s.rounds, DEFAULTS.rounds), 1, 999),
+        secondsPerRound: TIME_OPTIONS.find(o => o.s === s.secondsPerRound)?.s ?? DEFAULTS.secondsPerRound,
+        soundOn: s.soundOn !== false,
+      };
+    } catch { return { ...DEFAULTS }; }
+  }
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); } catch {}
+  }
+
+  // ---------- utils ----------
+  function int(v, d) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : d; }
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+  function isImage(f) { return (f.type && f.type.startsWith('image/')) || IMG_RE.test(f.name || ''); }
+
+  function fmtClock(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`;
+  }
+  function fmtTotal(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // ---------- audio ----------
+  let audioCtx = null;
+  function beep() {
+    if (!state.settings.soundOn) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t0 = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, t0);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.18, t0 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.2);
+    } catch {}
+  }
+
+  // ---------- image ingest ----------
+  async function walk(entry) {
+    if (!entry) return [];
+    if (entry.isFile) {
+      try {
+        const f = await new Promise((res, rej) => entry.file(res, rej));
+        return [f];
+      } catch { return []; }
+    }
+    if (!entry.isDirectory) return [];
+    const reader = entry.createReader();
+    const all = [];
+    for (;;) {
+      let batch;
+      try {
+        batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+      } catch { break; }
+      if (!batch.length) break;
+      all.push(...batch);
+    }
+    const nested = await Promise.all(all.map(e => walk(e).catch(() => [])));
+    return nested.flat();
+  }
+
+  async function ingestDataTransfer(dt) {
+    // Snapshot entries synchronously — the DataTransfer can be cleared before await resolves.
+    const items = Array.from(dt.items || []);
+    const entries = items
+      .map(i => (typeof i.webkitGetAsEntry === 'function' ? i.webkitGetAsEntry() : null))
+      .filter(Boolean);
+    const hadDir = entries.some(e => e.isDirectory);
+    const fallbackFiles = Array.from(dt.files || []);
+    let collected = [];
+    if (entries.length) {
+      const lists = await Promise.all(entries.map(e => walk(e).catch(() => [])));
+      collected = lists.flat();
+    }
+    if (!collected.length) collected = fallbackFiles;
+    return { files: collected.filter(isImage), hadDir };
+  }
+
+  function setImages(files) {
+    state.urls.forEach(URL.revokeObjectURL);
+    state.images = files;
+    state.urls = files.map(f => URL.createObjectURL(f));
+    state.included = files.map(() => true);
+  }
+
+  function selectedIndices() {
+    return state.images.map((_, i) => i).filter(i => state.included[i]);
+  }
+
+  function renderThumbs() {
+    const grid = $('thumbs');
+    const actions = $('thumb-actions');
+    const n = state.images.length;
+    grid.innerHTML = '';
+    if (!n) { grid.hidden = true; actions.hidden = true; return; }
+    grid.hidden = false;
+    actions.hidden = false;
+    const frag = document.createDocumentFragment();
+    state.images.forEach((file, i) => {
+      const cell = document.createElement('label');
+      cell.className = 'thumb' + (state.included[i] ? '' : ' off');
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = file.name || '';
+      img.src = state.urls[i];
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!state.included[i];
+      cb.setAttribute('aria-label', `Include ${file.name || 'image ' + (i + 1)}`);
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        state.included[i] = cb.checked;
+        cell.classList.toggle('off', !cb.checked);
+        updateSelectionUI();
+      });
+      cell.appendChild(img);
+      cell.appendChild(cb);
+      frag.appendChild(cell);
+    });
+    grid.appendChild(frag);
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI() {
+    const total = state.images.length;
+    const sel = selectedIndices().length;
+    const drop = $('drop');
+    drop.classList.toggle('has-images', total > 0);
+    drop.querySelector('.primary').textContent = total
+      ? `${sel} of ${total} selected — drop or click to replace`
+      : 'Drop a folder of images here';
+    $('thumb-summary').textContent = `${sel} / ${total} selected`;
+    $('begin').disabled = sel === 0;
+  }
+
+  async function handleIngest(producer) {
+    const hint = $('drop-hint');
+    hint.textContent = 'Loading…';
+    hint.classList.remove('err');
+    try {
+      const result = await producer();
+      const files = Array.isArray(result) ? result : result.files;
+      const hadDir = !Array.isArray(result) && result.hadDir;
+      if (!files.length) {
+        setImages([]);
+        renderThumbs();
+        updateSelectionUI();
+        hint.textContent = hadDir
+          ? 'Your browser blocked reading the dropped folder. Use “choose a folder” instead.'
+          : 'No images detected.';
+        hint.classList.add('err');
+      } else {
+        setImages(files);
+        renderThumbs();
+        hint.textContent = '';
+      }
+    } catch (e) {
+      console.error('Ingest failed:', e);
+      hint.textContent = 'Could not read files.';
+      hint.classList.add('err');
+    }
+  }
+
+  // ---------- view switching ----------
+  function setView(v) {
+    state.view = v;
+    for (const [k, el] of Object.entries(views)) el.hidden = k !== v;
+  }
+
+  // ---------- session lifecycle ----------
+  function buildQueue() {
+    state.queue = shuffle(selectedIndices());
+    state.cursor = 0;
+  }
+  function reshuffleAvoidingSeam() {
+    const tail = state.queue[state.queue.length - 1];
+    state.queue = shuffle(selectedIndices());
+    if (state.queue.length > 1 && state.queue[0] === tail) {
+      [state.queue[0], state.queue[1]] = [state.queue[1], state.queue[0]];
+    }
+    state.cursor = 0;
+  }
+  function advanceQueue() {
+    state.cursor++;
+    if (state.cursor >= state.queue.length) reshuffleAvoidingSeam();
+  }
+  function rewindQueue() {
+    if (state.cursor > 0) { state.cursor--; return; }
+    // No history available — prepend a fresh random pick from the selected pool.
+    const pool = selectedIndices();
+    if (pool.length) state.queue.unshift(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  function currentImageUrl() {
+    return state.urls[state.queue[state.cursor]];
+  }
+
+  function begin() {
+    if (!selectedIndices().length) return;
+    state.rounds = state.settings.rounds;
+    state.roundMs = state.settings.secondsPerRound * 1000;
+    state.round = 1;
+    state.activeMs = 0;
+    state.paused = false;
+    buildQueue();
+    showRoundImage();
+    startRoundTimer();
+    openActiveSegment(performance.now());
+    setView('session');
+    updatePauseIcon();
+    draw();
+    scheduleTick();
+  }
+
+  function showRoundImage() {
+    const img = $('ref-image');
+    img.src = currentImageUrl();
+  }
+
+  function startRoundTimer() {
+    state.roundRemainingMs = state.roundMs;
+    state.roundDeadline = performance.now() + state.roundMs;
+  }
+
+  function openActiveSegment(now) {
+    state.activeStart = now;
+  }
+  function closeActiveSegment(now) {
+    if (state.activeStart != null) {
+      state.activeMs += now - state.activeStart;
+      state.activeStart = null;
+    }
+  }
+
+  function draw() {
+    if (state.view !== 'session') return Infinity;
+    const now = performance.now();
+    const remaining = state.paused ? state.roundRemainingMs : (state.roundDeadline - now);
+    const active = state.activeMs + (state.activeStart != null ? now - state.activeStart : 0);
+    $('stat-round').textContent = `${state.round}/${state.rounds}`;
+    const timerEl = $('stat-timer');
+    timerEl.textContent = fmtClock(remaining);
+    timerEl.classList.toggle('warn', !state.paused && remaining > 0 && remaining <= 5000);
+    $('stat-total').textContent = fmtTotal(active);
+    return remaining;
+  }
+  function tick() {
+    state.rafId = null;
+    if (state.view !== 'session' || state.paused) return;
+    const remaining = draw();
+    if (remaining <= 0) { onRoundEnd(); return; }
+    state.rafId = requestAnimationFrame(tick);
+  }
+  function scheduleTick() {
+    if (state.rafId == null && state.view === 'session' && !state.paused) {
+      state.rafId = requestAnimationFrame(tick);
+    }
+  }
+
+  function onRoundEnd() {
+    beep();
+    if (state.round >= state.rounds) {
+      complete();
+      return;
+    }
+    state.round++;
+    advanceQueue();
+    showRoundImage();
+    startRoundTimer();
+    draw();
+    scheduleTick();
+  }
+
+  function next() {
+    if (state.round >= state.rounds) { complete(); return; }
+    state.round++;
+    advanceQueue();
+    showRoundImage();
+    startRoundTimer();
+    draw();
+  }
+  function prev() {
+    if (state.round <= 1) return;
+    state.round--;
+    rewindQueue();
+    showRoundImage();
+    startRoundTimer();
+    draw();
+  }
+  function togglePause() {
+    const now = performance.now();
+    if (state.paused) {
+      state.paused = false;
+      state.roundDeadline = now + state.roundRemainingMs;
+      openActiveSegment(now);
+      scheduleTick();
+    } else {
+      state.paused = true;
+      state.roundRemainingMs = Math.max(0, state.roundDeadline - now);
+      closeActiveSegment(now);
+      if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+    }
+    updatePauseIcon();
+    draw();
+  }
+  function updatePauseIcon() {
+    $('pause-icon').setAttribute('href', state.paused ? '#i-play' : '#i-pause');
+    $('btn-pause').setAttribute('aria-label', state.paused ? 'Resume' : 'Pause');
+  }
+  function stop() { complete(/*stopped*/ true); }
+
+  function complete(stopped = false) {
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    closeActiveSegment(performance.now());
+    const counted = stopped ? Math.max(0, state.round - 1) : state.rounds;
+    $('sum-rounds').textContent = `${counted} / ${state.rounds}`;
+    $('sum-time').textContent = fmtTotal(state.activeMs);
+    setView('summary');
+  }
+
+  function repeatSession() {
+    if (!selectedIndices().length) { newSession(); return; }
+    begin();
+  }
+  function newSession() {
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    state.urls.forEach(URL.revokeObjectURL);
+    state.images = [];
+    state.urls = [];
+    state.included = [];
+    state.queue = [];
+    state.cursor = 0;
+    state.round = 0;
+    state.activeMs = 0;
+    state.activeStart = null;
+    state.roundDeadline = null;
+    state.paused = false;
+    hydrateConfigFromSettings();
+    renderThumbs();
+    updateSelectionUI();
+    setView('config');
+  }
+
+  // ---------- config wiring ----------
+  function hydrateConfigFromSettings() {
+    const n = state.settings.rounds;
+    $('rounds').value = n;
+    $('rounds-dec').disabled = n <= 1;
+    $('rounds-inc').disabled = n >= 999;
+    renderTimeSeg();
+    renderSoundToggle();
+  }
+
+  function renderTimeSeg() {
+    const seg = $('time-seg');
+    seg.innerHTML = '';
+    for (const opt of TIME_OPTIONS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.role = 'radio';
+      b.textContent = opt.label;
+      const on = opt.s === state.settings.secondsPerRound;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.addEventListener('click', () => {
+        state.settings.secondsPerRound = opt.s;
+        saveSettings();
+        renderTimeSeg();
+      });
+      seg.appendChild(b);
+    }
+  }
+
+  function renderSoundToggle() {
+    const on = !!state.settings.soundOn;
+    $('sound-toggle').textContent = on ? 'On' : 'Off';
+    $('sound-toggle').setAttribute('aria-pressed', on ? 'true' : 'false');
+    $('sound-icon').setAttribute('href', on ? '#i-vol' : '#i-vol-off');
+  }
+
+  // ---------- event listeners ----------
+  function wireConfig() {
+    const drop = $('drop');
+    const inFolder = $('input-folder');
+    const inFiles  = $('input-files');
+
+    drop.addEventListener('click', (e) => {
+      if (e.target.closest('button, .thumbs, .thumb-actions')) return;
+      inFolder.click();
+    });
+    drop.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inFolder.click(); }
+    });
+    $('pick-folder').addEventListener('click', (e) => { e.stopPropagation(); inFolder.click(); });
+    $('pick-files').addEventListener('click', (e) => { e.stopPropagation(); inFiles.click(); });
+
+    inFolder.addEventListener('change', () => {
+      const files = Array.from(inFolder.files || []).filter(isImage);
+      handleIngest(async () => files);
+      inFolder.value = '';
+    });
+    inFiles.addEventListener('change', () => {
+      const files = Array.from(inFiles.files || []).filter(isImage);
+      handleIngest(async () => files);
+      inFiles.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach(ev => {
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('dragging'); });
+    });
+    ['dragleave', 'dragend', 'drop'].forEach(ev => {
+      drop.addEventListener(ev, () => drop.classList.remove('dragging'));
+    });
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      handleIngest(() => ingestDataTransfer(e.dataTransfer));
+    });
+    // prevent the browser from navigating away on stray drops
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => e.preventDefault());
+
+    const roundsInput = $('rounds');
+    function setRounds(n, syncInput) {
+      n = clamp(int(n, state.settings.rounds), 1, 999);
+      state.settings.rounds = n;
+      if (syncInput) roundsInput.value = n;
+      $('rounds-dec').disabled = n <= 1;
+      $('rounds-inc').disabled = n >= 999;
+      saveSettings();
+    }
+    roundsInput.addEventListener('input', () => setRounds(roundsInput.value, false));
+    roundsInput.addEventListener('blur', () => setRounds(roundsInput.value, true));
+    $('rounds-dec').addEventListener('click', () => setRounds(state.settings.rounds - 1, true));
+    $('rounds-inc').addEventListener('click', () => setRounds(state.settings.rounds + 1, true));
+
+    $('thumb-all').addEventListener('click', () => {
+      state.included = state.images.map(() => true);
+      renderThumbs();
+    });
+    $('thumb-none').addEventListener('click', () => {
+      state.included = state.images.map(() => false);
+      renderThumbs();
+    });
+
+    $('sound-toggle').addEventListener('click', () => {
+      state.settings.soundOn = !state.settings.soundOn;
+      saveSettings();
+      renderSoundToggle();
+    });
+
+    $('begin').addEventListener('click', () => {
+      // warm up the audio context on the user gesture so the first round-end beep is reliable
+      if (state.settings.soundOn) { try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+      begin();
+    });
+  }
+
+  function wireSession() {
+    $('btn-prev').addEventListener('click', prev);
+    $('btn-next').addEventListener('click', next);
+    $('btn-pause').addEventListener('click', togglePause);
+    $('btn-stop').addEventListener('click', stop);
+
+    document.addEventListener('keydown', (e) => {
+      if (state.view !== 'session') return;
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      switch (e.key) {
+        case ' ':       e.preventDefault(); togglePause(); break;
+        case 'ArrowLeft':  prev(); break;
+        case 'ArrowRight': next(); break;
+        case 'Escape':  stop(); break;
+      }
+    });
+  }
+
+  function wireSummary() {
+    $('btn-repeat').addEventListener('click', repeatSession);
+    $('btn-new').addEventListener('click', newSession);
+  }
+
+  // ---------- boot ----------
+  wireConfig();
+  wireSession();
+  wireSummary();
+  hydrateConfigFromSettings();
+  renderThumbs();
+  updateSelectionUI();
+  setView('config');
+})();
+</script>
+</body>
+</html>
