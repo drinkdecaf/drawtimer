@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DrawTimer">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5.5' fill='%232d6cdf'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M12 8.5v4l3 1.5' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5.5' fill='%232d6cdf'/%3E%3Ccircle cx='12' cy='12' r='6.5' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M12 8.5v4l3 1.5' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>DrawTimer</title>
 <style>
   :root {
@@ -40,13 +49,14 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { height: 100%; overscroll-behavior: none; }
   body {
     margin: 0;
     font: 16px/1.4 var(--sans);
     color: var(--text);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
     flex-direction: column;
   }
@@ -55,7 +65,7 @@
   .icon-lg { width: 36px; height: 36px; }
 
   header.app {
-    padding: 18px var(--pad) 6px;
+    padding: calc(18px + env(safe-area-inset-top)) var(--pad) 6px;
     text-align: center;
   }
   header.app h1 {
@@ -75,6 +85,9 @@
     display: flex;
     flex-direction: column;
     padding: var(--pad);
+    padding-left: max(var(--pad), env(safe-area-inset-left));
+    padding-right: max(var(--pad), env(safe-area-inset-right));
+    padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
     max-width: 760px;
     width: 100%;
     margin: 0 auto;
@@ -105,6 +118,7 @@
     cursor: pointer;
     transition: background .12s, border-color .12s, transform .04s;
     user-select: none;
+    touch-action: manipulation;
   }
   button:hover, .btn:hover { background: var(--surface-2); }
   button:active { transform: translateY(1px); }
@@ -144,14 +158,14 @@
     box-shadow: 0 1px 1px rgba(0,0,0,.04);
   }
 
-  label.field {
+  .field {
     display: flex;
     flex-direction: column;
     gap: 6px;
     font-size: 14px;
     color: var(--muted);
   }
-  label.field > span { font-weight: 500; color: var(--text); }
+  .field > span { font-weight: 500; color: var(--text); }
 
   input[type="number"] {
     font: inherit;
@@ -278,6 +292,10 @@
     height: auto;
     object-fit: contain;
     display: block;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
   }
 
   .stats {
@@ -319,15 +337,51 @@
   .summary-stats .v { font: 600 28px/1 var(--mono); }
   .summary-stats .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
   .summary-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .sum-thumbs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: 4px;
+  }
+  .sum-thumbs img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    display: block;
+  }
 
   .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
   .hint.err { color: var(--danger); }
 
+  .version {
+    position: fixed;
+    right: calc(8px + env(safe-area-inset-right));
+    bottom: calc(6px + env(safe-area-inset-bottom));
+    font-size: 11px;
+    color: var(--muted);
+    opacity: .55;
+    pointer-events: none;
+    user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* narrow screens */
   @media (max-width: 420px) {
-    main { padding: 12px; gap: 10px; }
+    main {
+      padding: 12px;
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      gap: 10px;
+    }
     .controls { grid-template-columns: repeat(2, 1fr); }
     .stats .v { font-size: 16px; }
+  }
+  @media (pointer: coarse) {
+    .desktop-only { display: none; }
   }
 </style>
 </head>
@@ -358,9 +412,11 @@
     <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose folder of images">
       <svg class="icon icon-lg" aria-hidden="true"><use href="#i-upload"/></svg>
       <div class="primary">Drop a folder of images here</div>
-      <div>or
-        <button type="button" class="alt" id="pick-folder">choose a folder</button>
-        ·
+      <div>
+        <span class="desktop-only">or
+          <button type="button" class="alt" id="pick-folder">choose a folder</button>
+          ·
+        </span>
         <button type="button" class="alt" id="pick-files">select images</button>
       </div>
       <div id="thumb-actions" class="thumb-actions" hidden>
@@ -386,10 +442,10 @@
       </div>
     </label>
 
-    <label class="field">
+    <div class="field">
       <span>Time per round</span>
       <div id="time-seg" class="seg" role="radiogroup" aria-label="Time per round"></div>
-    </label>
+    </div>
 
     <div class="sound-row">
       <div class="label">
@@ -439,9 +495,12 @@
           New
         </button>
       </div>
+      <div id="sum-thumbs" class="sum-thumbs" aria-label="Images drawn this session"></div>
     </div>
   </section>
 </main>
+
+<div class="version" aria-hidden="true">DrawTimer v1.1 2026.5.20</div>
 
 <script>
 (() => {
@@ -452,6 +511,7 @@
     { s: 45,  label: '45s' },
     { s: 60,  label: '60s' },
     { s: 90,  label: '90s' },
+    { s: 120, label: '2m'  },
     { s: 300, label: '5m'  },
     { s: 600, label: '10m' },
   ];
@@ -459,6 +519,7 @@
 
   const $ = (id) => document.getElementById(id);
   const views = { config: $('config'), session: $('session'), summary: $('summary') };
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
 
   const state = {
     view: 'config',
@@ -476,7 +537,8 @@
     activeMs: 0,
     activeStart: null,
     paused: false,
-    rafId: null,
+    timerId: null,
+    shown: [],
   };
 
   // ---------- settings persistence ----------
@@ -521,9 +583,30 @@
     return arr;
   }
 
+  // ---------- wake lock ----------
+  let wakeLock = null;
+  async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    if (wakeLock) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch {}
+  }
+  function releaseWakeLock() {
+    if (!wakeLock) return;
+    const w = wakeLock; wakeLock = null;
+    w.release().catch(() => {});
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.view === 'session' && !state.paused) {
+      acquireWakeLock();
+    }
+  });
+
   // ---------- audio ----------
   let audioCtx = null;
-  function beep() {
+  function beep(freq = 880) {
     if (!state.settings.soundOn) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -532,7 +615,7 @@
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, t0);
+      osc.frequency.setValueAtTime(freq, t0);
       gain.gain.setValueAtTime(0, t0);
       gain.gain.linearRampToValueAtTime(0.18, t0 + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
@@ -635,8 +718,8 @@
     const drop = $('drop');
     drop.classList.toggle('has-images', total > 0);
     drop.querySelector('.primary').textContent = total
-      ? `${sel} of ${total} selected — drop or click to replace`
-      : 'Drop a folder of images here';
+      ? `${sel} of ${total} selected — ${isCoarse ? 'tap to replace' : 'drop or click to replace'}`
+      : (isCoarse ? 'Tap to select images' : 'Drop a folder of images here');
     $('thumb-summary').textContent = `${sel} / ${total} selected`;
     $('begin').disabled = sel === 0;
   }
@@ -709,6 +792,7 @@
     state.round = 1;
     state.activeMs = 0;
     state.paused = false;
+    state.shown = [];
     buildQueue();
     showRoundImage();
     startRoundTimer();
@@ -717,9 +801,12 @@
     updatePauseIcon();
     draw();
     scheduleTick();
+    acquireWakeLock();
   }
 
   function showRoundImage() {
+    const idx = state.queue[state.cursor];
+    if (idx != null) state.shown.push(idx);
     const img = $('ref-image');
     img.src = currentImageUrl();
   }
@@ -727,6 +814,7 @@
   function startRoundTimer() {
     state.roundRemainingMs = state.roundMs;
     state.roundDeadline = performance.now() + state.roundMs;
+    state.warned = false;
   }
 
   function openActiveSegment(now) {
@@ -752,16 +840,21 @@
     return remaining;
   }
   function tick() {
-    state.rafId = null;
     if (state.view !== 'session' || state.paused) return;
     const remaining = draw();
-    if (remaining <= 0) { onRoundEnd(); return; }
-    state.rafId = requestAnimationFrame(tick);
+    if (!state.warned && remaining > 0 && remaining <= 10000) {
+      state.warned = true;
+      beep(440);
+    }
+    if (remaining <= 0) onRoundEnd();
   }
   function scheduleTick() {
-    if (state.rafId == null && state.view === 'session' && !state.paused) {
-      state.rafId = requestAnimationFrame(tick);
+    if (state.timerId == null && state.view === 'session' && !state.paused) {
+      state.timerId = setInterval(tick, 200);
     }
+  }
+  function stopTick() {
+    if (state.timerId != null) { clearInterval(state.timerId); state.timerId = null; }
   }
 
   function onRoundEnd() {
@@ -801,11 +894,13 @@
       state.roundDeadline = now + state.roundRemainingMs;
       openActiveSegment(now);
       scheduleTick();
+      acquireWakeLock();
     } else {
       state.paused = true;
       state.roundRemainingMs = Math.max(0, state.roundDeadline - now);
       closeActiveSegment(now);
-      if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+      stopTick();
+      releaseWakeLock();
     }
     updatePauseIcon();
     draw();
@@ -817,12 +912,33 @@
   function stop() { complete(/*stopped*/ true); }
 
   function complete(stopped = false) {
-    if (state.rafId) cancelAnimationFrame(state.rafId);
+    stopTick();
+    releaseWakeLock();
     closeActiveSegment(performance.now());
     const counted = stopped ? Math.max(0, state.round - 1) : state.rounds;
     $('sum-rounds').textContent = `${counted} / ${state.rounds}`;
     $('sum-time').textContent = fmtTotal(state.activeMs);
+    renderShownThumbs();
     setView('summary');
+  }
+
+  function renderShownThumbs() {
+    const container = $('sum-thumbs');
+    container.innerHTML = '';
+    const seen = new Set();
+    const unique = state.shown.filter(i => !seen.has(i) && (seen.add(i), true));
+    if (!unique.length) { container.hidden = true; return; }
+    container.hidden = false;
+    const frag = document.createDocumentFragment();
+    unique.forEach(i => {
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.src = state.urls[i];
+      img.alt = (state.images[i] && state.images[i].name) || '';
+      frag.appendChild(img);
+    });
+    container.appendChild(frag);
   }
 
   function repeatSession() {
@@ -830,7 +946,7 @@
     begin();
   }
   function newSession() {
-    if (state.rafId) cancelAnimationFrame(state.rafId);
+    stopTick();
     state.urls.forEach(URL.revokeObjectURL);
     state.images = [];
     state.urls = [];
@@ -842,6 +958,7 @@
     state.activeStart = null;
     state.roundDeadline = null;
     state.paused = false;
+    state.shown = [];
     hydrateConfigFromSettings();
     renderThumbs();
     updateSelectionUI();
@@ -891,12 +1008,13 @@
     const inFolder = $('input-folder');
     const inFiles  = $('input-files');
 
+    const defaultPicker = () => (isCoarse ? inFiles : inFolder).click();
     drop.addEventListener('click', (e) => {
       if (e.target.closest('button, .thumbs, .thumb-actions')) return;
-      inFolder.click();
+      defaultPicker();
     });
     drop.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inFolder.click(); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); defaultPicker(); }
     });
     $('pick-folder').addEventListener('click', (e) => { e.stopPropagation(); inFolder.click(); });
     $('pick-files').addEventListener('click', (e) => { e.stopPropagation(); inFiles.click(); });
