@@ -213,7 +213,6 @@
     text-decoration: underline;
   }
   .drop.has-images { border-style: solid; }
-  .drop .count { color: var(--text); font-weight: 500; }
 
   .thumbs {
     width: 100%;
@@ -355,22 +354,112 @@
   .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
   .hint.err { color: var(--danger); }
 
-  .set-status {
+  .tracking-box {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 10px 14px;
+  }
+  .tracking-box[hidden] { display: none; }
+  .set-status:not([hidden]) + .set-list:not([hidden]) {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .set-status {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     font-size: 14px;
   }
-  .set-status .text { color: var(--text); }
-  .set-status .text strong { font-weight: 600; }
-  .set-status .text .muted { color: var(--muted); }
-  .set-status button { min-height: 36px; padding: 6px 12px; font-size: 13px; }
   .set-status[hidden] { display: none; }
+  .set-status .text { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; min-width: 0; color: var(--text); }
+  .set-status .detail { color: var(--muted); }
+  .set-status .detail strong { color: var(--text); font-weight: 600; }
+  .set-status button { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+
+  .set-name-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    min-height: 0;
+    text-decoration: underline dotted var(--border-strong);
+    text-underline-offset: 3px;
+  }
+  .set-name-btn.empty {
+    color: var(--accent);
+    font-weight: normal;
+    text-decoration: underline;
+  }
+  .set-name-btn:hover { text-decoration-color: var(--accent); }
+  .set-name-btn:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 4px; }
+  .set-name-input {
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 2px 6px;
+    min-height: 0;
+    width: 10em;
+    max-width: 100%;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .set-name-input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+  .set-name-input[hidden] { display: none; }
+
+  .thumb-actions[hidden] { display: none; }
+  .thumbs[hidden] { display: none; }
+
+  .set-list[hidden] { display: none; }
+  .set-list-details > summary { list-style: none; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+  .set-list-details > summary::-webkit-details-marker { display: none; }
+  .set-list-details > summary::before {
+    content: "▸";
+    font-size: 22px;
+    line-height: 0;
+    color: var(--muted);
+    width: 8px;
+    display: inline-block;
+    transition: transform .12s;
+  }
+  .set-list-details[open] > summary::before { transform: rotate(90deg); }
+  .set-list-details[open] > summary { margin-bottom: 6px; }
+  .set-list-header {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+  .set-list-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .set-list-items li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 14px;
+    min-height: 36px;
+  }
+  .set-list-items li + li {
+    border-top: 1px solid var(--border);
+  }
+  .set-list-items .info { display: flex; align-items: baseline; gap: 8px; min-width: 0; flex-wrap: wrap; }
+  .set-list-items .name { font-weight: 600; }
+  .set-list-items .progress { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .set-list-items button { min-height: 32px; padding: 4px 10px; font-size: 13px; color: var(--danger); }
+  .set-list-items button:hover { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); }
 
   .version {
     position: fixed;
@@ -449,9 +538,21 @@
     <input id="input-folder" type="file" webkitdirectory directory multiple hidden>
     <input id="input-files" type="file" multiple accept="image/*,.zip,application/zip" hidden>
 
-    <div id="set-status" class="set-status" hidden>
-      <span class="text"></span>
-      <button id="set-reset" type="button">Reset tracking</button>
+    <div id="tracking-box" class="tracking-box" hidden>
+      <div id="set-status" class="set-status" hidden>
+        <span class="text">
+          <button type="button" id="set-name" class="set-name-btn empty">Name this set</button>
+          <input type="text" id="set-name-input" class="set-name-input" maxlength="40" hidden aria-label="Set name">
+          <span class="detail" id="set-detail"></span>
+        </span>
+        <button id="set-reset" type="button">Reset tracking</button>
+      </div>
+      <div id="set-list" class="set-list" hidden>
+        <details id="set-list-details" class="set-list-details">
+          <summary class="set-list-header">Tracked sets</summary>
+          <ul id="set-list-items" class="set-list-items"></ul>
+        </details>
+      </div>
     </div>
 
     <label class="field">
@@ -521,7 +622,7 @@
   </section>
 </main>
 
-<div class="version" aria-hidden="true">DrawTimer v1.1 2026.5.20</div>
+<div class="version" aria-hidden="true">DrawTimer v1.3 2026.5.28</div>
 
 <!-- JSZip v3.10.1 (dual-licensed MIT / GPLv3) — https://stuk.github.io/jszip/ -->
 <script>
@@ -544,7 +645,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 (() => {
   const SETTINGS_KEY = 'drawtimer:settings';
   const SEEN_KEY = 'drawtimer:seen-hashes';
-  const DEFAULTS = { rounds: 10, secondsPerRound: 60, soundOn: true };
+  const SET_NAMES_KEY = 'drawtimer:set-names';
+  const DEFAULTS = { rounds: 10, secondsPerRound: 60, soundOn: true, setListOpen: true };
   const TIME_OPTIONS = [
     { s: 30,  label: '30s' },
     { s: 45,  label: '45s' },
@@ -567,6 +669,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     urls: [],
     included: [],
     hashes: [],
+    setFingerprint: '',
     queue: [],
     cursor: 0,
     round: 0,
@@ -591,6 +694,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         rounds: clamp(int(s.rounds, DEFAULTS.rounds), 1, 999),
         secondsPerRound: TIME_OPTIONS.find(o => o.s === s.secondsPerRound)?.s ?? DEFAULTS.secondsPerRound,
         soundOn: s.soundOn !== false,
+        setListOpen: s.setListOpen !== false,
       };
     } catch { return { ...DEFAULTS }; }
   }
@@ -613,6 +717,59 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     saveSeen(seen);
   }
 
+  // ---------- set-name persistence ----------
+  function loadSetNames() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SET_NAMES_KEY)) || {};
+      const out = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (typeof v === 'string') {
+          out[k] = { name: v, lastUpload: 0, hashes: [] };
+        } else if (v && typeof v === 'object') {
+          out[k] = {
+            name: v.name || '',
+            lastUpload: v.lastUpload || 0,
+            hashes: Array.isArray(v.hashes) ? v.hashes : [],
+          };
+        }
+      }
+      return out;
+    } catch { return {}; }
+  }
+  function saveSetNames(map) {
+    try { localStorage.setItem(SET_NAMES_KEY, JSON.stringify(map)); } catch {}
+  }
+  function getSetName() {
+    if (!state.setFingerprint) return '';
+    const entry = loadSetNames()[state.setFingerprint];
+    return (entry && entry.name) || '';
+  }
+  function setSetName(name) {
+    if (!state.setFingerprint) return;
+    const map = loadSetNames();
+    const trimmed = (name || '').trim().slice(0, 40);
+    if (trimmed) {
+      const existing = map[state.setFingerprint] || {};
+      map[state.setFingerprint] = {
+        name: trimmed,
+        lastUpload: existing.lastUpload || Date.now(),
+        hashes: (existing.hashes && existing.hashes.length) ? existing.hashes : [...state.hashes],
+      };
+    } else {
+      delete map[state.setFingerprint];
+    }
+    saveSetNames(map);
+  }
+  function touchSetUpload() {
+    if (!state.setFingerprint) return;
+    const map = loadSetNames();
+    const entry = map[state.setFingerprint];
+    if (!entry) return; // only known/named sets get touched
+    entry.lastUpload = Date.now();
+    if (!entry.hashes || !entry.hashes.length) entry.hashes = [...state.hashes];
+    saveSetNames(map);
+  }
+
   // ---------- utils ----------
   function int(v, d) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : d; }
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -622,10 +779,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   async function hashFile(file) {
     const buf = await file.arrayBuffer();
     const digest = await crypto.subtle.digest('SHA-256', buf);
-    const bytes = new Uint8Array(digest);
+    return bytesToHex(new Uint8Array(digest));
+  }
+  function bytesToHex(bytes) {
     let hex = '';
     for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
     return hex;
+  }
+  async function computeSetFingerprint(hashes) {
+    const sorted = [...hashes].sort();
+    if (!sorted.length) return '';
+    const buf = new TextEncoder().encode(sorted.join(','));
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    return bytesToHex(new Uint8Array(digest));
   }
 
   const ZIP_TYPE_MAP = {
@@ -757,7 +923,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   async function ingestDataTransfer(dt) {
-    // Snapshot entries synchronously — the DataTransfer can be cleared before await resolves.
+    // Snapshot entries synchronously - the DataTransfer can be cleared before await resolves.
     const items = Array.from(dt.items || []);
     const entries = items
       .map(i => (typeof i.webkitGetAsEntry === 'function' ? i.webkitGetAsEntry() : null))
@@ -779,6 +945,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     state.urls = files.map(f => URL.createObjectURL(f));
     state.included = files.map(() => true);
     state.hashes = files.length ? await Promise.all(files.map(hashFile)) : [];
+    state.setFingerprint = await computeSetFingerprint(state.hashes);
+    touchSetUpload();
   }
 
   function selectedIndices() {
@@ -826,7 +994,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const drop = $('drop');
     drop.classList.toggle('has-images', total > 0);
     drop.querySelector('.primary').textContent = total
-      ? `${sel} of ${total} selected — ${isCoarse ? 'tap to replace' : 'drop or click to replace'}`
+      ? `${sel} of ${total} selected - ${isCoarse ? 'tap to replace' : 'drop or click to replace'}`
       : (isCoarse ? 'Tap to select images' : 'Drop a folder of images here');
     $('thumb-summary').textContent = `${sel} / ${total} selected`;
     $('begin').disabled = sel === 0;
@@ -874,19 +1042,129 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const box = $('set-status');
     if (!box) return;
     const total = state.hashes.length;
-    if (!total) { box.hidden = true; return; }
-    const text = box.querySelector('.text');
+    if (!total) { box.hidden = true; renderSetList(); return; }
+
+    const nameBtn = $('set-name');
+    const nameInput = $('set-name-input');
+    const name = getSetName();
+    if (name) {
+      nameBtn.textContent = name;
+      nameBtn.classList.remove('empty');
+    } else {
+      nameBtn.textContent = 'Name this set';
+      nameBtn.classList.add('empty');
+    }
+    nameBtn.hidden = false;
+    nameInput.hidden = true;
+
+    const detail = $('set-detail');
     const known = computeKnownCount(state.hashes);
     const togo = total - known;
     if (known === 0) {
-      text.innerHTML = `<strong>${total} to go</strong>`;
+      detail.innerHTML = `- <strong>${total} to go</strong>`;
     } else if (known === total) {
-      text.innerHTML = `<strong>All ${total} previously drawn</strong> <span class="muted">— pool will recycle</span>`;
+      detail.innerHTML = `- <strong>All ${total} previously drawn</strong>, pool will recycle`;
     } else {
-      text.innerHTML = `<strong>${togo} to go</strong> <span class="muted">(${known} already drawn)</span>`;
+      detail.innerHTML = `- <strong>${togo} to go</strong> (${known} already drawn)`;
     }
+
     $('set-reset').hidden = known === 0;
     box.hidden = false;
+
+    renderSetList();
+  }
+
+  function renderSetList() {
+    const list = $('set-list');
+    const items = $('set-list-items');
+    if (!list || !items) return;
+    const all = loadSetNames();
+    const seen = loadSeen();
+    const entries = Object.entries(all)
+      .filter(([fp, e]) => e.name && e.hashes && e.hashes.length && fp !== state.setFingerprint)
+      .map(([fp, e]) => ({ fp, ...e }));
+
+    if (!entries.length) {
+      list.hidden = true;
+      items.innerHTML = '';
+      updateTrackingBoxVisibility();
+      return;
+    }
+
+    entries.sort((a, b) => (b.lastUpload || 0) - (a.lastUpload || 0));
+
+    const frag = document.createDocumentFragment();
+    for (const e of entries) {
+      const total = e.hashes.length;
+      let known = 0;
+      for (const h of e.hashes) if (h in seen) known++;
+      const li = document.createElement('li');
+      const info = document.createElement('span');
+      info.className = 'info';
+      const nameEl = document.createElement('span');
+      nameEl.className = 'name';
+      nameEl.textContent = e.name;
+      const progEl = document.createElement('span');
+      progEl.className = 'progress';
+      progEl.textContent = `${known} / ${total} drawn`;
+      info.appendChild(nameEl);
+      info.appendChild(progEl);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'set-remove';
+      btn.dataset.fp = e.fp;
+      btn.textContent = 'Remove';
+      li.appendChild(info);
+      li.appendChild(btn);
+      frag.appendChild(li);
+    }
+    items.innerHTML = '';
+    items.appendChild(frag);
+    list.hidden = false;
+    updateTrackingBoxVisibility();
+  }
+
+  function updateTrackingBoxVisibility() {
+    const box = $('tracking-box');
+    if (!box) return;
+    box.hidden = $('set-status').hidden && $('set-list').hidden;
+  }
+
+  function removeSet(fingerprint) {
+    if (!fingerprint) return;
+    const map = loadSetNames();
+    const entry = map[fingerprint];
+    if (entry && entry.hashes && entry.hashes.length) {
+      const seen = loadSeen();
+      for (const h of entry.hashes) delete seen[h];
+      saveSeen(seen);
+    }
+    delete map[fingerprint];
+    saveSetNames(map);
+    renderSetStatus();
+  }
+
+  function startEditName() {
+    if (!state.setFingerprint) return;
+    const nameBtn = $('set-name');
+    const nameInput = $('set-name-input');
+    nameInput.value = getSetName();
+    nameBtn.hidden = true;
+    nameInput.hidden = false;
+    nameInput.focus();
+    nameInput.select();
+  }
+  function commitNameEdit() {
+    const nameInput = $('set-name-input');
+    if (nameInput.hidden) return;
+    setSetName(nameInput.value);
+    renderSetStatus();
+  }
+  function cancelNameEdit() {
+    const nameBtn = $('set-name');
+    const nameInput = $('set-name-input');
+    nameInput.hidden = true;
+    nameBtn.hidden = false;
   }
 
   function resetSetTracking() {
@@ -934,7 +1212,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function rewindQueue() {
     if (state.cursor > 0) { state.cursor--; return; }
-    // No history available — prepend a fresh random pick from the selected pool.
+    // No history available - prepend a fresh random pick from the selected pool.
     const pool = selectedIndices();
     if (pool.length) state.queue.unshift(pool[Math.floor(Math.random() * pool.length)]);
   }
@@ -1112,6 +1390,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     state.urls = [];
     state.included = [];
     state.hashes = [];
+    state.setFingerprint = '';
     state.queue = [];
     state.cursor = 0;
     state.round = 0;
@@ -1242,6 +1521,28 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
 
     $('set-reset').addEventListener('click', resetSetTracking);
+
+    $('set-list-items').addEventListener('click', (e) => {
+      const btn = e.target.closest('.set-remove');
+      if (!btn) return;
+      removeSet(btn.dataset.fp);
+    });
+
+    const details = $('set-list-details');
+    details.open = state.settings.setListOpen;
+    details.addEventListener('toggle', () => {
+      state.settings.setListOpen = details.open;
+      saveSettings();
+    });
+
+    $('set-name').addEventListener('click', (e) => { e.stopPropagation(); startEditName(); });
+    const nameInput = $('set-name-input');
+    nameInput.addEventListener('click', (e) => e.stopPropagation());
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commitNameEdit(); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancelNameEdit(); }
+    });
+    nameInput.addEventListener('blur', commitNameEdit);
   }
 
   function wireSession() {
